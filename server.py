@@ -39,7 +39,17 @@ def generate_image_from_gemini(prompt: str, save_path: str = None) -> str:
     image.show()
 
 
-@mcp.tool()
+    """
+    Generate an image based on the given prompt and save it to the specified path.
+
+    Args:
+        prompt (str): The prompt used to generate the image.
+        save_path (str, optional): The path to save the generated image. If not provided, a default path will be used.
+
+    Returns:
+        str: The absolute path of the saved image, or an error message if no valid image data is found.
+    """
+    @mcp.tool()
 async def generate_image(prompt: str, save_path: str = None) -> str:
     if save_path is None:
         save_path = os.path.join('generated-images', f'{uuid.uuid4()}.png')
