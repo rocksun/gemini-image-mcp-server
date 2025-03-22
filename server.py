@@ -10,7 +10,10 @@ import sys
 # Initialize FastMCP server
 mcp = FastMCP("gemini-image-mcp-server")
 
-def generate_image_from_gemini(prompt: str) -> str:
+def generate_image_from_gemini(prompt: str, save_path: str = None) -> str:
+    if save_path is None:
+        import uuid
+        save_path = f'{uuid.uuid4()}.png'
     api_key = os.getenv('GEMINI_API_KEY')
     client = genai.Client(api_key=api_key)
     contents = (prompt)
@@ -27,37 +30,33 @@ def generate_image_from_gemini(prompt: str) -> str:
             sys.stderr.write(part.text + '\n')
         elif part.inline_data is not None:
             image = Image.open(BytesIO((part.inline_data.data)))
-            # 创建 generated-images 目录（如果不存在）
-            if not os.path.exists('generated-images'):
-                os.makedirs('generated-images')
-            # 生成唯一文件名
-            unique_filename = f"generated-images/{uuid.uuid4()}.png"
-            image.save(unique_filename)
-            return os.path.abspath(unique_filename)
+            # 确保保存路径的目录存在
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            image.save(save_path)
+            return os.path.abspath(save_path)
     # 如果没有找到有效的图像数据，返回一个默认的错误信息
     return "No valid image data found."
     image.show()
 
 
 @mcp.tool()
-async def generate_image(prompt: str) -> str:
-    """Get the image path from prompt.
-
-    Args:
-        prompt: Text used to generate the image
-    """
-    path = generate_image_from_gemini(prompt)
+async def generate_image(prompt: str, save_path: str = None) -> str:
+    if save_path is None:
+        save_path = os.path.join('generated-images', f'{uuid.uuid4()}.png')
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    path = generate_image_from_gemini(prompt, save_path)
     return path
 
-if __name__ == "__main__":
-    # Initialize and run the server
-    mcp.run(transport='stdio')
-
 # if __name__ == "__main__":
-#     path = generate_image_from_gemini('''Hi, can you create a 3d rendered image of a pig
-#                 with wings and a top hat flying over a happy 
-#                 futuristic scifi city with lots of greenery?''')
-#     print(path)
+#     # Initialize and run the server
+#     mcp.run(transport='stdio')
+
+if __name__ == "__main__":
+    import asyncio
+    path = asyncio.run(generate_image('''Hi, can you create a 3d rendered image of a pig
+                with wings and a top hat flying over a happy 
+                futuristic scifi city with lots of greenery?'''))
+    print(path)
 
     # import asyncio
     # loop = asyncio.get_event_loop()
